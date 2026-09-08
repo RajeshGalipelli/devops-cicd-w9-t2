@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'devops-cicd-w9-t2'
         IMAGE_TAG = "v${BUILD_NUMBER}"
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
@@ -31,7 +32,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo "Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
+                echo "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG}"
 
                 sh """
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
@@ -60,15 +61,62 @@ pipeline {
                 """
             }
         }
+
+        stage('Load Image into K3s') {
+            steps {
+                echo 'Loading Docker image into K3s...'
+
+                sh """
+                    docker save ${IMAGE_NAME}:${IMAGE_TAG} -o app-image.tar
+                    sudo k3s ctr images import app-image.tar
+                    rm -f app-image.tar
+                """
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application to Kubernetes...'
+
+                sh """
+                    sed -i 's|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' deployment.yaml
+
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                """
+            }
+        }
+
+        stage('Rolling Update') {
+            steps {
+                echo 'Waiting for rolling deployment...'
+
+                sh """
+                    kubectl rollout status deployment/devops-cicd-app --timeout=120s
+                """
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                echo 'Verifying deployment...'
+
+                sh """
+                    kubectl get deployment
+                    kubectl get pods
+                    kubectl get service
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully!'
+            echo 'CI/CD deployment completed successfully!'
         }
 
         failure {
-            echo 'CI/CD pipeline failed.'
+            echo 'CI/CD deployment failed.'
         }
     }
 }
