@@ -79,10 +79,10 @@ pipeline {
                 echo 'Deploying application to Kubernetes...'
 
                 sh """
-                    sed -i 's|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' deployment.yaml
+                    sed -i 's|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' deployment.yml
 
-                    kubectl apply -f deployment.yaml
-                    kubectl apply -f service.yaml
+                    kubectl apply -f deployment.yml
+                    kubectl apply -f service.yml
                 """
             }
         }
