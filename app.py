@@ -11,9 +11,9 @@ def home():
         </head>
         <body>
             <h1>DevOps CI/CD Application</h1>
-            <h2>Version 1.0</h2>
+            <h2>Version 2.0</h2>
             <p>Deployed using Jenkins, Docker and Kubernetes</p>
-            <p>Status: Running</p>
+            <p>Status: Running - Rolling Update</p>
         </body>
     </html>
     """
