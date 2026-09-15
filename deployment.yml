@@ -1,25 +1,77 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: devops-cicd-app
+
 spec:
   replicas: 3
+
+  revisionHistoryLimit: 5
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
+
   selector:
     matchLabels:
       app: devops-cicd-app
+
   template:
     metadata:
       labels:
         app: devops-cicd-app
+
     spec:
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: devops-cicd-app
-          image: devops-cicd-w9-t2:v1
+          image: devops-cicd-w9-t2:production-v4
           imagePullPolicy: Never
+
           ports:
             - containerPort: 5000
+              protocol: TCP
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+          readinessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          terminationMessagePolicy: File
